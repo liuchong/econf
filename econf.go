@@ -1,0 +1,82 @@
+package econf
+
+import (
+	"io/ioutil"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/iancoleman/strcase"
+)
+
+// check error to panic when read configurations
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+// parseInt parse string to int64, panic on error
+func parseInt(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
+	check(err)
+	return i
+}
+
+// read file contains and convert to string, panic on error
+func read(f string) string {
+	dat, err := ioutil.ReadFile(f)
+	check(err)
+	return strings.TrimSpace(string(dat))
+}
+
+// envStr convert string to required environment name in snake case
+func envStr(dat interface{}, str string) string {
+	datName := reflect.TypeOf(dat).Elem().Name()
+	return strcase.ToScreamingSnake(datName) +
+		"_" +
+		strcase.ToScreamingSnake(str)
+}
+
+// envFileStr append _FILE to environment name from func envStr
+func envFileStr(dat interface{}, str string) string {
+	return envStr(dat, str) + "_FILE"
+}
+
+// SetFieldByName set field of struct from environment variable or file by name
+func SetFieldByName(s interface{}, name string) {
+	elem := reflect.ValueOf(s).Elem()
+	if elem.Kind() != reflect.Struct {
+		return
+	}
+
+	if fld := elem.FieldByName(name); fld.IsValid() && fld.CanSet() {
+		var v string
+		// set up with environment variable
+		if env := os.Getenv(envStr(s, name)); env != "" {
+			v = env
+		}
+		// set up with environment file
+		if env := os.Getenv(envFileStr(s, name)); env != "" {
+			v = read(env)
+		}
+		if v != "" {
+			if fld.Kind() == reflect.Int ||
+				fld.Kind() == reflect.Int64 {
+				fld.SetInt(parseInt(v))
+			} else {
+				fld.SetString(v)
+			}
+		}
+	}
+}
+
+// SetFields looping set all field of struct
+func SetFields(s interface{}) {
+	t := reflect.TypeOf(s).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		name := t.Field(i).Name
+		SetFieldByName(s, name)
+	}
+}
