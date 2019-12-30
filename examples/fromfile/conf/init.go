@@ -1,4 +1,4 @@
-package examples
+package conf
 
 import "github.com/liuchong/econf"
 
