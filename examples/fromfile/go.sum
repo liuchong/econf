@@ -1,4 +1,2 @@
-github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 h1:VHgatEHNcBFEB7inlalqfNqw65aNkM1lGX2yt3NmbS8=
-github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334/go.mod h1:SK73tn/9oHe+/Y0h39VT4UCxmurVJkR5NA7kMEAOgSE=
-github.com/liuchong/econf v0.0.0-20181210103229-cf481f836089 h1:1yTXCIt9+5ijEI7payCczlAjq/FsDOqSWK4bTTkyZ08=
-github.com/liuchong/econf v0.0.0-20181210103229-cf481f836089/go.mod h1:vBxxMbuYZZ9A7rGoXC7934qCtCpxuUb6+3eiY92kYjs=
+github.com/liuchong/econf v0.0.0-20220627094154-586cdbcc26fb h1:9e2kXpzwzqpZTf5E0Yi5iRf2moSJH7JeMJLbKZNTG1U=
+github.com/liuchong/econf v0.0.0-20220627094154-586cdbcc26fb/go.mod h1:dcQP0zIsDdZkHzV3tExh54dQCkmrd2aXe0CgB+HE9cY=
