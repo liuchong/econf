@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/liuchong/econf/internal/snake"
 )
 
 // check error to panic when read configurations
@@ -31,12 +31,14 @@ func read(f string) string {
 	return strings.TrimSpace(string(dat))
 }
 
+func toSnake(s string) string {
+	return snake.ToSnake(s, '_', true)
+}
+
 // envStr convert string to required environment name in snake case
 func envStr(dat interface{}, str string) string {
 	datName := reflect.TypeOf(dat).Elem().Name()
-	return strcase.ToScreamingSnake(datName) +
-		"_" +
-		strcase.ToScreamingSnake(str)
+	return toSnake(datName) + "_" + toSnake(str)
 }
 
 // envFileStr append _FILE to environment name from func envStr
