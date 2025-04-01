@@ -65,6 +65,9 @@ func SetFieldByName(s interface{}, name string) {
 		}
 		if v != "" {
 			if fld.Kind() == reflect.Int ||
+				fld.Kind() == reflect.Int8 ||
+				fld.Kind() == reflect.Int16 ||
+				fld.Kind() == reflect.Int32 ||
 				fld.Kind() == reflect.Int64 {
 				fld.SetInt(parseInt(v))
 			} else {
