@@ -49,6 +49,11 @@ func envFileStr(dat interface{}, str string) string {
 
 // SetFieldByName set field of struct from environment variable or file by name
 func SetFieldByName(s interface{}, name string) {
+	SetFieldByNameWithSep(s, name, ",")
+}
+
+// SetFieldByNameWithSep set field with custom separator for slice types
+func SetFieldByNameWithSep(s interface{}, name string, sep string) {
 	elem := reflect.ValueOf(s).Elem()
 	if elem.Kind() != reflect.Struct {
 		return
@@ -79,7 +84,7 @@ func SetFieldByName(s interface{}, name string) {
 					fld.Type().Elem().Kind() == reflect.Int16 ||
 					fld.Type().Elem().Kind() == reflect.Int32 ||
 					fld.Type().Elem().Kind() == reflect.Int64) {
-				strValues := strings.Split(v, ",")
+				strValues := strings.Split(v, sep)
 				sliceType := fld.Type()
 				intValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
 				for i, sv := range strValues {
@@ -87,7 +92,7 @@ func SetFieldByName(s interface{}, name string) {
 				}
 				fld.Set(intValues)
 			} else if fld.Kind() == reflect.Slice && fld.Type().Elem().Kind() == reflect.String {
-				values := strings.Split(v, ",")
+				values := strings.Split(v, sep)
 				fld.Set(reflect.ValueOf(values))
 			} else {
 				panic(fmt.Sprintf("unsupported field type: %v for field %s", fld.Type(), name))
@@ -98,9 +103,14 @@ func SetFieldByName(s interface{}, name string) {
 
 // SetFields looping set all field of struct
 func SetFields(s interface{}) {
+	SetFieldsWithSep(s, ",")
+}
+
+// SetFieldsWithSep looping set all field of struct with custom separator
+func SetFieldsWithSep(s interface{}, sep string) {
 	t := reflect.TypeOf(s).Elem()
 	for i := 0; i < t.NumField(); i++ {
 		name := t.Field(i).Name
-		SetFieldByName(s, name)
+		SetFieldByNameWithSep(s, name, sep)
 	}
 }

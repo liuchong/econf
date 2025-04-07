@@ -8,20 +8,22 @@ import (
 )
 
 type myConf1 struct {
-	Key1       string
-	MyKey22    int64
-	Key333     string
-	KeyListNum []int32
-	KeyListStr []string
+	Key1        string
+	MyKey22     int64
+	Key333      string
+	KeyListNum  []int32
+	KeyListStr1 []string
+	KeyListStr2 []string
 }
 
 func TestSetFields(t *testing.T) {
 	var myTestConf1 = myConf1{
-		Key1:       "",
-		MyKey22:    0,
-		Key333:     "",
-		KeyListNum: []int32{0},
-		KeyListStr: nil,
+		Key1:        "",
+		MyKey22:     0,
+		Key333:      "",
+		KeyListNum:  []int32{0},
+		KeyListStr1: nil,
+		KeyListStr2: nil,
 	}
 
 	v1 := "my value 1"
@@ -31,7 +33,8 @@ func TestSetFields(t *testing.T) {
 	os.Setenv("MY_CONF_1_KEY_1", v1)
 	os.Setenv("MY_CONF_1_MY_KEY_22", fmt.Sprintf("%d", v2))
 	os.Setenv("MY_CONF_1_KEY_LIST_NUM", fmt.Sprintf("%d,%d", l3[0], l3[1]))
-	os.Setenv("MY_CONF_1_KEY_LIST_STR", strings.Join(l4, ","))
+	os.Setenv("MY_CONF_1_KEY_LIST_STR_1", strings.Join(l4, ","))
+	os.Setenv("MY_CONF_1_KEY_LIST_STR_2", strings.Join(l4, "#"))
 
 	SetFields(&myTestConf1)
 
@@ -47,8 +50,19 @@ func TestSetFields(t *testing.T) {
 	if myTestConf1.KeyListNum[0] != l3[0] || myTestConf1.KeyListNum[1] != l3[1] {
 		t.Errorf("Test econf set fields failed. Expect number list, actual %+v", myTestConf1.KeyListNum)
 	}
-	if myTestConf1.KeyListStr[0] != l4[0] || myTestConf1.KeyListStr[1] != l4[1] ||
-		myTestConf1.KeyListStr[2] != l4[2] || myTestConf1.KeyListStr[3] != l4[3] {
-		t.Errorf("Test econf set fields failed. Expect string list, actual %+v", myTestConf1.KeyListStr)
+	if myTestConf1.KeyListStr1 == nil || len(myTestConf1.KeyListStr1) != 4 ||
+		myTestConf1.KeyListStr1[0] != l4[0] || myTestConf1.KeyListStr1[1] != l4[1] ||
+		myTestConf1.KeyListStr1[2] != l4[2] || myTestConf1.KeyListStr1[3] != l4[3] {
+		t.Errorf("Test econf set fields failed. Expect string list, actual %+v", myTestConf1.KeyListStr1)
+	}
+	if myTestConf1.KeyListStr2 == nil || len(myTestConf1.KeyListStr2) != 1 || myTestConf1.KeyListStr2[0] != strings.Join(l4, "#") {
+		t.Errorf("Test econf set fields failed. Expect string list, actual %+v", myTestConf1.KeyListStr2)
+	}
+
+	SetFieldByNameWithSep(&myTestConf1, "KeyListStr2", "#")
+	if myTestConf1.KeyListStr2 == nil || len(myTestConf1.KeyListStr1) != 4 ||
+		myTestConf1.KeyListStr2[0] != l4[0] || myTestConf1.KeyListStr2[1] != l4[1] ||
+		myTestConf1.KeyListStr2[2] != l4[2] || myTestConf1.KeyListStr2[3] != l4[3] {
+		t.Errorf("Test econf set fields failed. Expect string list, actual %+v", myTestConf1.KeyListStr2)
 	}
 }
