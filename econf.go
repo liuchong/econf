@@ -1,6 +1,7 @@
 package econf
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -70,8 +71,26 @@ func SetFieldByName(s interface{}, name string) {
 				fld.Kind() == reflect.Int32 ||
 				fld.Kind() == reflect.Int64 {
 				fld.SetInt(parseInt(v))
-			} else {
+			} else if fld.Kind() == reflect.String {
 				fld.SetString(v)
+			} else if fld.Kind() == reflect.Slice &&
+				(fld.Type().Elem().Kind() == reflect.Int ||
+					fld.Type().Elem().Kind() == reflect.Int8 ||
+					fld.Type().Elem().Kind() == reflect.Int16 ||
+					fld.Type().Elem().Kind() == reflect.Int32 ||
+					fld.Type().Elem().Kind() == reflect.Int64) {
+				strValues := strings.Split(v, ",")
+				sliceType := fld.Type()
+				intValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
+				for i, sv := range strValues {
+					intValues.Index(i).SetInt(parseInt(sv))
+				}
+				fld.Set(intValues)
+			} else if fld.Kind() == reflect.Slice && fld.Type().Elem().Kind() == reflect.String {
+				values := strings.Split(v, ",")
+				fld.Set(reflect.ValueOf(values))
+			} else {
+				panic(fmt.Sprintf("unsupported field type: %v for field %s", fld.Type(), name))
 			}
 		}
 	}
