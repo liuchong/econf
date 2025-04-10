@@ -29,7 +29,7 @@ func TestSetFields(t *testing.T) {
 	v1 := "my value 1"
 	v2 := int64(123)
 	l3 := []int32{138, 186}
-	l4 := []string{"hello", "world", "foo", "bar"}
+	l4 := []string{"hello", "world", "foo bar", ""}
 	os.Setenv("MY_CONF_1_KEY_1", v1)
 	os.Setenv("MY_CONF_1_MY_KEY_22", fmt.Sprintf("%d", v2))
 	os.Setenv("MY_CONF_1_KEY_LIST_NUM", fmt.Sprintf("%d,%d", l3[0], l3[1]))
