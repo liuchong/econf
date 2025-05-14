@@ -30,6 +30,15 @@ type TestConfig struct {
 	IntSlice     []int
 }
 
+type ConfigWithPrivateFields struct {
+	PublicStr    string
+	privateStr   string
+	PublicInt    int
+	privateInt   int
+	publicSlice  []string
+	privateSlice []int
+}
+
 func TestSetFields(t *testing.T) {
 	var myTestConf1 = myConf1{
 		Key1:        "",
@@ -152,7 +161,7 @@ func TestTypesParsing(t *testing.T) {
 
 			// Set environment variables for the test
 			for k, v := range tt.envVars {
-				os.Setenv(k, v)
+				_ = os.Setenv(k, v)
 			}
 
 			// Create config
@@ -219,6 +228,99 @@ func TestTypesParsing(t *testing.T) {
 					if !reflect.DeepEqual(cfg.IntSlice, tt.expected.IntSlice) {
 						t.Errorf("IntSlice = %v, want %v", cfg.IntSlice, tt.expected.IntSlice)
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestPrivateFields(t *testing.T) {
+	tests := []struct {
+		name     string
+		envVars  map[string]string
+		expected ConfigWithPrivateFields
+	}{
+		{
+			name: "Test private and public fields",
+			envVars: map[string]string{
+				"CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_STR":    "public string",
+				"CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_STR":   "private string",
+				"CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_INT":    "42",
+				"CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_INT":   "24",
+				"CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_SLICE":  "a,b,c",
+				"CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_SLICE": "1,2,3",
+			},
+			expected: ConfigWithPrivateFields{
+				PublicStr:    "public string",
+				privateStr:   "private string",
+				PublicInt:    42,
+				privateInt:   24,
+				publicSlice:  []string{"a", "b", "c"},
+				privateSlice: []int{1, 2, 3},
+			},
+		},
+		{
+			name: "Test partial fields",
+			envVars: map[string]string{
+				"CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_STR": "only private",
+				"CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_INT":  "100",
+			},
+			expected: ConfigWithPrivateFields{
+				privateStr: "only private",
+				PublicInt:  100,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear environment variables first
+			os.Clearenv()
+
+			// Set environment variables for the test
+			for k, v := range tt.envVars {
+				os.Setenv(k, v)
+			}
+
+			// Create config
+			cfg := &ConfigWithPrivateFields{}
+			SetFields(cfg)
+
+			// Check public string
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_STR"] != "" &&
+				cfg.PublicStr != tt.expected.PublicStr {
+				t.Errorf("PublicStr = %v, want %v", cfg.PublicStr, tt.expected.PublicStr)
+			}
+
+			// Check private string
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_STR"] != "" &&
+				cfg.privateStr != tt.expected.privateStr {
+				t.Errorf("privateStr = %v, want %v", cfg.privateStr, tt.expected.privateStr)
+			}
+
+			// Check public int
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_INT"] != "" &&
+				cfg.PublicInt != tt.expected.PublicInt {
+				t.Errorf("PublicInt = %v, want %v", cfg.PublicInt, tt.expected.PublicInt)
+			}
+
+			// Check private int
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_INT"] != "" &&
+				cfg.privateInt != tt.expected.privateInt {
+				t.Errorf("privateInt = %v, want %v", cfg.privateInt, tt.expected.privateInt)
+			}
+
+			// Check public slice
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PUBLIC_SLICE"] != "" {
+				if !reflect.DeepEqual(cfg.publicSlice, tt.expected.publicSlice) {
+					t.Errorf("publicSlice = %v, want %v", cfg.publicSlice, tt.expected.publicSlice)
+				}
+			}
+
+			// Check private slice
+			if tt.envVars["CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_SLICE"] != "" {
+				if !reflect.DeepEqual(cfg.privateSlice, tt.expected.privateSlice) {
+					t.Errorf("privateSlice = %v, want %v", cfg.privateSlice, tt.expected.privateSlice)
 				}
 			}
 		})

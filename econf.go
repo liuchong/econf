@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/liuchong/econf/internal/snake"
 )
@@ -86,7 +87,7 @@ func handleFloatValue(fld reflect.Value, v string) {
 }
 
 // handleIntSlice handles setting an integer slice
-func handleIntSlice(fld reflect.Value, strValues []string, sep string) {
+func handleIntSlice(fld reflect.Value, strValues []string) {
 	sliceType := fld.Type()
 	intValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
 	for i, sv := range strValues {
@@ -96,7 +97,7 @@ func handleIntSlice(fld reflect.Value, strValues []string, sep string) {
 }
 
 // handleFloatSlice handles setting a float slice
-func handleFloatSlice(fld reflect.Value, strValues []string, sep string) {
+func handleFloatSlice(fld reflect.Value, strValues []string) {
 	sliceType := fld.Type()
 	floatValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
 	for i, sv := range strValues {
@@ -117,48 +118,57 @@ func SetFieldByNameWithSep(s interface{}, name string, sep string) {
 		return
 	}
 
-	if fld := elem.FieldByName(name); fld.IsValid() && fld.CanSet() {
-		var v string
-		// set up with environment variable
-		if env := os.Getenv(envStr(s, name)); env != "" {
-			v = env
-		}
-		// set up with environment file
-		if env := os.Getenv(envFileStr(s, name)); env != "" {
-			v = read(env)
-		}
-		if v != "" {
-			if isIntKind(fld.Kind()) {
-				handleIntValue(fld, v)
-			} else if isFloatKind(fld.Kind()) {
-				handleFloatValue(fld, v)
-			} else if fld.Kind() == reflect.Bool {
-				fld.SetBool(parseBool(v))
-			} else if fld.Kind() == reflect.String {
-				fld.SetString(v)
-			} else if fld.Kind() == reflect.Slice {
-				elemKind := fld.Type().Elem().Kind()
-				strValues := strings.Split(v, sep)
+	// Get the field value
+	fld := elem.FieldByName(name)
+	if !fld.IsValid() {
+		return
+	}
 
-				if isIntKind(elemKind) {
-					handleIntSlice(fld, strValues, sep)
-				} else if isFloatKind(elemKind) {
-					handleFloatSlice(fld, strValues, sep)
-				} else if elemKind == reflect.String {
-					fld.Set(reflect.ValueOf(strValues))
-				} else if elemKind == reflect.Bool {
-					sliceType := fld.Type()
-					boolValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
-					for i, sv := range strValues {
-						boolValues.Index(i).SetBool(parseBool(sv))
-					}
-					fld.Set(boolValues)
-				} else {
-					panic(fmt.Sprintf("unsupported slice element type: %v for field %s", elemKind, name))
+	// Make private fields settable
+	if !fld.CanSet() {
+		fld = reflect.NewAt(fld.Type(), unsafe.Pointer(fld.UnsafeAddr())).Elem()
+	}
+
+	var v string
+	// set up with environment variable
+	if env := os.Getenv(envStr(s, name)); env != "" {
+		v = env
+	}
+	// set up with environment file
+	if env := os.Getenv(envFileStr(s, name)); env != "" {
+		v = read(env)
+	}
+	if v != "" {
+		if isIntKind(fld.Kind()) {
+			handleIntValue(fld, v)
+		} else if isFloatKind(fld.Kind()) {
+			handleFloatValue(fld, v)
+		} else if fld.Kind() == reflect.Bool {
+			fld.SetBool(parseBool(v))
+		} else if fld.Kind() == reflect.String {
+			fld.SetString(v)
+		} else if fld.Kind() == reflect.Slice {
+			elemKind := fld.Type().Elem().Kind()
+			strValues := strings.Split(v, sep)
+
+			if isIntKind(elemKind) {
+				handleIntSlice(fld, strValues)
+			} else if isFloatKind(elemKind) {
+				handleFloatSlice(fld, strValues)
+			} else if elemKind == reflect.String {
+				fld.Set(reflect.ValueOf(strValues))
+			} else if elemKind == reflect.Bool {
+				sliceType := fld.Type()
+				boolValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
+				for i, sv := range strValues {
+					boolValues.Index(i).SetBool(parseBool(sv))
 				}
+				fld.Set(boolValues)
 			} else {
-				panic(fmt.Sprintf("unsupported field type: %v for field %s", fld.Type(), name))
+				panic(fmt.Sprintf("unsupported slice element type: %v for field %s", elemKind, name))
 			}
+		} else {
+			panic(fmt.Sprintf("unsupported field type: %v for field %s", fld.Type(), name))
 		}
 	}
 }
