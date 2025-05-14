@@ -1,16 +1,25 @@
 # econf
-A simple configure tool use ENV or ENV_FILE
+A simple configuration tool using environment variables or files.
 
 ## Description
 
-Set `Xxx.yyy` with:
+Set configuration values for struct fields with:
 
-1. export `XXX_YYY=zzz`, or
-2. export `XXX_YYY_FILE=path/to/xxx_yyy` and `echo zzz > path/to/xxx_yyy`.
+1. Environment variables: `XXX_YYY=zzz`, or
+2. Environment files: `XXX_YYY_FILE=path/to/xxx_yyy`. Update file content like `echo zzz > path/to/xxx_yyy`.
 
-## Usage
+## Features
 
-[examples](./examples)
+- Supports basic types (`string`, `bool`, `int`, `float32/64`)
+- Supports slice types (`[]string`, `[]bool`, `[]int`, `[]float32/64`)
+- Supports both public and private fields
+- Custom slice separators
+- File-based configuration
+
+## Examples
+
+1. Check [examples](./examples) directory for working examples
+2. See test files (`*_test.go`) for more usage examples and features
 
 ## License
 
