@@ -25,6 +25,20 @@ func parseInt(s string) int64 {
 	return i
 }
 
+// parseFloat parse string to float64, panic on error
+func parseFloat(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	check(err)
+	return f
+}
+
+// parseBool parse string to bool, panic on error
+func parseBool(s string) bool {
+	b, err := strconv.ParseBool(s)
+	check(err)
+	return b
+}
+
 // read file contains and convert to string, panic on error
 func read(f string) string {
 	dat, err := ioutil.ReadFile(f)
@@ -45,6 +59,50 @@ func envStr(dat interface{}, str string) string {
 // envFileStr append _FILE to environment name from func envStr
 func envFileStr(dat interface{}, str string) string {
 	return envStr(dat, str) + "_FILE"
+}
+
+// isIntKind checks if the kind is any integer type
+func isIntKind(k reflect.Kind) bool {
+	return k == reflect.Int ||
+		k == reflect.Int8 ||
+		k == reflect.Int16 ||
+		k == reflect.Int32 ||
+		k == reflect.Int64
+}
+
+// isFloatKind checks if the kind is any float type
+func isFloatKind(k reflect.Kind) bool {
+	return k == reflect.Float32 || k == reflect.Float64
+}
+
+// handleIntValue handles setting an integer value
+func handleIntValue(fld reflect.Value, v string) {
+	fld.SetInt(parseInt(v))
+}
+
+// handleFloatValue handles setting a float value
+func handleFloatValue(fld reflect.Value, v string) {
+	fld.SetFloat(parseFloat(v))
+}
+
+// handleIntSlice handles setting an integer slice
+func handleIntSlice(fld reflect.Value, strValues []string, sep string) {
+	sliceType := fld.Type()
+	intValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
+	for i, sv := range strValues {
+		intValues.Index(i).SetInt(parseInt(sv))
+	}
+	fld.Set(intValues)
+}
+
+// handleFloatSlice handles setting a float slice
+func handleFloatSlice(fld reflect.Value, strValues []string, sep string) {
+	sliceType := fld.Type()
+	floatValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
+	for i, sv := range strValues {
+		floatValues.Index(i).SetFloat(parseFloat(sv))
+	}
+	fld.Set(floatValues)
 }
 
 // SetFieldByName set field of struct from environment variable or file by name
@@ -70,30 +128,34 @@ func SetFieldByNameWithSep(s interface{}, name string, sep string) {
 			v = read(env)
 		}
 		if v != "" {
-			if fld.Kind() == reflect.Int ||
-				fld.Kind() == reflect.Int8 ||
-				fld.Kind() == reflect.Int16 ||
-				fld.Kind() == reflect.Int32 ||
-				fld.Kind() == reflect.Int64 {
-				fld.SetInt(parseInt(v))
+			if isIntKind(fld.Kind()) {
+				handleIntValue(fld, v)
+			} else if isFloatKind(fld.Kind()) {
+				handleFloatValue(fld, v)
+			} else if fld.Kind() == reflect.Bool {
+				fld.SetBool(parseBool(v))
 			} else if fld.Kind() == reflect.String {
 				fld.SetString(v)
-			} else if fld.Kind() == reflect.Slice &&
-				(fld.Type().Elem().Kind() == reflect.Int ||
-					fld.Type().Elem().Kind() == reflect.Int8 ||
-					fld.Type().Elem().Kind() == reflect.Int16 ||
-					fld.Type().Elem().Kind() == reflect.Int32 ||
-					fld.Type().Elem().Kind() == reflect.Int64) {
+			} else if fld.Kind() == reflect.Slice {
+				elemKind := fld.Type().Elem().Kind()
 				strValues := strings.Split(v, sep)
-				sliceType := fld.Type()
-				intValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
-				for i, sv := range strValues {
-					intValues.Index(i).SetInt(parseInt(sv))
+
+				if isIntKind(elemKind) {
+					handleIntSlice(fld, strValues, sep)
+				} else if isFloatKind(elemKind) {
+					handleFloatSlice(fld, strValues, sep)
+				} else if elemKind == reflect.String {
+					fld.Set(reflect.ValueOf(strValues))
+				} else if elemKind == reflect.Bool {
+					sliceType := fld.Type()
+					boolValues := reflect.MakeSlice(sliceType, len(strValues), len(strValues))
+					for i, sv := range strValues {
+						boolValues.Index(i).SetBool(parseBool(sv))
+					}
+					fld.Set(boolValues)
+				} else {
+					panic(fmt.Sprintf("unsupported slice element type: %v for field %s", elemKind, name))
 				}
-				fld.Set(intValues)
-			} else if fld.Kind() == reflect.Slice && fld.Type().Elem().Kind() == reflect.String {
-				values := strings.Split(v, sep)
-				fld.Set(reflect.ValueOf(values))
 			} else {
 				panic(fmt.Sprintf("unsupported field type: %v for field %s", fld.Type(), name))
 			}
