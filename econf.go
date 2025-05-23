@@ -113,6 +113,11 @@ func SetFieldByName(s interface{}, name string) {
 
 // SetFieldByNameWithSep set field with custom separator for slice types
 func SetFieldByNameWithSep(s interface{}, name string, sep string) {
+	// Skip fields that start with underscore as they are non-config fields
+	if strings.HasPrefix(name, "_") {
+		return
+	}
+
 	elem := reflect.ValueOf(s).Elem()
 	if elem.Kind() != reflect.Struct {
 		return

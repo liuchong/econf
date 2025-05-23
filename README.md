@@ -15,6 +15,7 @@ Set configuration values for struct fields with:
 - Supports both public and private fields
 - Custom slice separators
 - File-based configuration
+- Fields starting with underscore (`_`) are treated as non-config fields and ignored
 
 ## Examples
 

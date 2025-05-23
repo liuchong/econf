@@ -31,12 +31,14 @@ type TestConfig struct {
 }
 
 type ConfigWithPrivateFields struct {
-	PublicStr    string
-	privateStr   string
-	PublicInt    int
-	privateInt   int
-	publicSlice  []string
-	privateSlice []int
+	PublicStr         string
+	privateStr        string
+	PublicInt         int
+	privateInt        int
+	publicSlice       []string
+	privateSlice      []int
+	_NonConfig        string // Fields starting with underscore are non-config fields
+	_privateNonConfig string // Another non-config field starting with underscore
 }
 
 func TestSetFields(t *testing.T) {
@@ -88,6 +90,22 @@ func TestSetFields(t *testing.T) {
 		myTestConf1.KeyListStr2[0] != l4[0] || myTestConf1.KeyListStr2[1] != l4[1] ||
 		myTestConf1.KeyListStr2[2] != l4[2] || myTestConf1.KeyListStr2[3] != l4[3] {
 		t.Errorf("Test econf set fields failed. Expect string list, actual %+v", myTestConf1.KeyListStr2)
+	}
+}
+
+func TestNonConfigFields(t *testing.T) {
+	// Test that fields starting with underscore are not configurable
+	cfg := &ConfigWithPrivateFields{}
+	_ = os.Setenv("CONFIG_WITH_PRIVATE_FIELDS_NON_CONFIG", "should not be set")
+	_ = os.Setenv("CONFIG_WITH_PRIVATE_FIELDS_PRIVATE_NON_CONFIG", "should not be set")
+
+	SetFields(cfg)
+
+	if cfg._NonConfig != "" {
+		t.Errorf("Non-config field was set when it should have been ignored. Value: %s", cfg._NonConfig)
+	}
+	if cfg._privateNonConfig != "" {
+		t.Errorf("Private non-config field was set when it should have been ignored. Value: %s", cfg._privateNonConfig)
 	}
 }
 
